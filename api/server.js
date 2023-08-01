@@ -73,31 +73,106 @@ server.post('/api/users', (req, res) =>{
             message: "Please provide name and bio for the user"
         })
     } else {
-            // 2- interact with db
-            User.insert(user)
+        // 2- interact with db
+        User.insert(user)
             // 3- send appropriate response
-                .then(created =>{
-                    //will show in npm run server terminal tab
-                    console.log("CREATED", created)
-                    res.status(201).json(created)
+            .then(created =>{
+                //will show in npm run server terminal tab
+                console.log("CREATED", created)
+                res.status(201).json(created)
             })
-        .catch (error => {
-            res.status(500).json({
-                error: error.message,
-                message: "There was an error while saving the user to the database"
+            .catch (error => {
+                res.status(500).json({
+                    error: error.message,
+                    message: "There was an error while saving the user to the database",
+                    stack: error.stack,
+                })
             })
-        })
     }
 })
 
 
-// [PUT]
+// [PUT] /api/users/:id (CRUpdateD user with :id using JSON payload)
+server.put('/api/users/:id', async (req, res)=> {
+    // 1- pull info from req
+    const changes = req.body
+    const { id } = req.params
+
+    //crude validation of req.body
+    if (!changes.name || !changes.bio) {
+        res.status(400).json({
+            message: "Please provide name and bio for the user",
+        })
+    } else {
+        try{
+            const updatedUser = await User.update(id, changes)
+            if (updatedUser){
+                res.status(200).json(updatedUser)
+            } else {
+            res.status(404).json(
+                {
+                message: "The user with the specified ID does not exist" 
+                })
+            }
+    } catch(error){
+        res.status(500).json({
+            error: error.message,
+            message: "The user information could not be modified"})
+    }
+    }
+})
 
 
-// [DELETE]
 
 
-//test to make sure express works - if endpoints will works
+
+
+
+// [DELETE] /api/users/:id (CRUDelete remove user with :id)
+server.delete('/api/users/:id', (req, res)=>{
+    // 1- gather info from the request object
+    const { id } = req.params;
+    // 2- interact with db
+    User.remove(id)
+        .then(deleted => {
+            // 3- send appropriate response
+            if(deleted) {
+                res.status(200).json(deleted)
+            } else {
+                res.status(404).json({
+                    message: "The user with the specified ID does not exist",
+                })
+            }
+        })
+        .catch(error => {
+            res.status(500).json({
+                error: error.message,
+                message: "The user could not be removed",
+                stack: error.stack,
+            })
+        })
+})
+
+//his code for delete- didn't pass npm test though
+    // server.delete('/api/users/:id', (req, res)=>{
+    // const possibleUser = await User.findById(req.params.id)
+    // // console.log('possibleUser:', possibleUser)
+   
+    // if (!possibleUser){
+    //     res.status(404).json({
+    //         message: "The user with the specified ID does not exist",
+    //     })
+    // } else {
+    //     const deletedUser = await User.remove(req.params.id)
+    //     //or write param as possibleUser.id ^
+    //     res.status(200).json(deletedUser)
+    // }
+    //})
+
+
+
+
+//a test to make sure express works - if endpoints will works
 //put this below the other endpoints
 server.use('*', (req, res) => {
     res.status(404).json({
